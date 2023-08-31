@@ -16,14 +16,21 @@ func main() {
 
 	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(fileSysRoot)))
 
-	r := chi.NewRouter()
-	r.Use(CorsMiddleware)
-	r.Handle("/app", apiCfg.metricsMiddleware(fileServerHandler))
-	r.Handle("/app/*", apiCfg.metricsMiddleware(fileServerHandler))
-	r.Get("/healthz", handleReadiness)
-	r.Get("/metrics", apiCfg.handleMetrics)
+	rootRouter := chi.NewRouter()
+	rootRouter.Use(CorsMiddleware)
+	rootRouter.Handle("/app", apiCfg.metricsMiddleware(fileServerHandler))
+	rootRouter.Handle("/app/*", apiCfg.metricsMiddleware(fileServerHandler))
 
-	server := &http.Server{Addr: addr, Handler: r}
+	adminRouter := chi.NewRouter()
+	adminRouter.Get("/metrics", apiCfg.handleMetrics)
+
+	apiRouter := chi.NewRouter()
+	apiRouter.Get("/healthz", handleReadiness)
+
+	rootRouter.Mount("/admin", adminRouter)
+	rootRouter.Mount("/api", apiRouter)
+
+	server := &http.Server{Addr: addr, Handler: rootRouter}
 
 	log.Printf("Server listening on port: 8080")
 	log.Fatal(server.ListenAndServe())
