@@ -2,9 +2,12 @@ package chirps
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/NischithB/chirpy/utils"
@@ -18,6 +21,7 @@ func GetChirpRouter() *chi.Router {
 	chirpRouter = chi.NewRouter()
 	chirpRouter.Get("/", HandleGetChirps)
 	chirpRouter.Post("/", HandleCreateChirp)
+	chirpRouter.Get("/{chirpID}", HandleGetChirpById)
 
 	return &chirpRouter
 }
@@ -67,6 +71,27 @@ func HandleGetChirps(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, chirps)
+}
+
+func HandleGetChirpById(w http.ResponseWriter, r *http.Request) {
+	chirpID, err := strconv.Atoi(chi.URLParam(r, "chirpID"))
+	if err != nil {
+		log.Printf("Error extracting chirpID from URL: %s", err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to extract chirpID from URL")
+		return
+	}
+
+	chirp, err := repository.GetChirpById(chirpID)
+	if errors.Is(err, ErrNotFound) {
+		utils.RespondWithError(w, http.StatusNotFound, fmt.Sprintf("Chirp with id: %d doesn't exist", chirpID))
+		return
+	}
+	if err != nil {
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to fetch Chirp")
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, chirp)
 }
 
 func cleanChirp(chirp string) string {
