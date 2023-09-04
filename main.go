@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/NischithB/chirpy/chirps"
 	"github.com/go-chi/chi"
 )
 
@@ -14,8 +15,10 @@ func main() {
 	fileSysRoot := "."
 	apiCfg := apiConfig{}
 
-	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(fileSysRoot)))
+	// database initialization
+	chirps.InitRepository()
 
+	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(fileSysRoot)))
 	rootRouter := chi.NewRouter()
 	rootRouter.Use(CorsMiddleware)
 	rootRouter.Handle("/app", apiCfg.metricsMiddleware(fileServerHandler))
@@ -26,7 +29,7 @@ func main() {
 
 	apiRouter := chi.NewRouter()
 	apiRouter.Get("/healthz", handleReadiness)
-	apiRouter.Post("/validate_chirp", handleValidateChirp)
+	apiRouter.Mount("/chirps", *chirps.GetChirpRouter())
 
 	rootRouter.Mount("/admin", adminRouter)
 	rootRouter.Mount("/api", apiRouter)
