@@ -5,45 +5,32 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/NischithB/chirpy/chirps"
+	"github.com/NischithB/chirpy/config"
+	"github.com/NischithB/chirpy/controllers"
+	"github.com/NischithB/chirpy/middlewares"
 	"github.com/go-chi/chi"
 )
 
 func main() {
 	port := 8080
 	addr := fmt.Sprintf("localhost:%d", port)
-	fileSysRoot := "."
-	apiCfg := apiConfig{}
 
 	// database initialization
-	chirps.InitRepository()
+	config.ConfigureDB()
 
-	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(fileSysRoot)))
+	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	rootRouter := chi.NewRouter()
 	rootRouter.Use(CorsMiddleware)
-	rootRouter.Handle("/app", apiCfg.metricsMiddleware(fileServerHandler))
-	rootRouter.Handle("/app/*", apiCfg.metricsMiddleware(fileServerHandler))
+	rootRouter.Handle("/app", middlewares.FileServerHitCounter(fileServerHandler))
+	rootRouter.Handle("/app/*", middlewares.FileServerHitCounter(fileServerHandler))
 
-	adminRouter := chi.NewRouter()
-	adminRouter.Get("/metrics", apiCfg.handleMetrics)
-
-	apiRouter := chi.NewRouter()
-	apiRouter.Get("/healthz", handleReadiness)
-	apiRouter.Mount("/chirps", *chirps.GetChirpRouter())
-
-	rootRouter.Mount("/admin", adminRouter)
-	rootRouter.Mount("/api", apiRouter)
+	rootRouter.Mount("/admin", controllers.GetAdminRouter())
+	rootRouter.Mount("/api", controllers.GetAPIRouter())
 
 	server := &http.Server{Addr: addr, Handler: rootRouter}
 
 	log.Printf("Server listening on port: 8080")
 	log.Fatal(server.ListenAndServe())
-}
-
-func handleReadiness(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
 
 func CorsMiddleware(next http.Handler) http.Handler {
