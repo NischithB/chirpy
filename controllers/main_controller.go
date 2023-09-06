@@ -13,6 +13,7 @@ func GetAPIRouter() chi.Router {
 	apiRouter.Get("/healthz", handleReadiness)
 	apiRouter.Mount("/chirps", getChirpRouter())
 	apiRouter.Mount("/users", getUsersRouter())
+	apiRouter.Mount("/", getAuthController())
 	return apiRouter
 }
 
