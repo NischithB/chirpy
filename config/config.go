@@ -18,8 +18,9 @@ var Config struct {
 func ConfigureDB() {
 	dbFilePath := "database.json"
 	initialData := models.DatabaseModel{
-		Chirps: map[int]models.Chirp{},
-		Users:  map[int]models.User{},
+		Chirps:        map[int]models.Chirp{},
+		Users:         map[int]models.User{},
+		RevokedTokens: map[string]string{},
 	}
 	db, err := database.NewDatabase[models.DatabaseModel](dbFilePath, initialData)
 	if err != nil {

@@ -11,15 +11,25 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func CreateJwt(key []byte, id, expiresIn int) (string, error) {
+func CreateJwt(key []byte, id int, isAccess bool) (string, error) {
 	curTime := time.Now().UTC()
+	var expiresIn time.Duration
+	var issuer string
+
+	if isAccess {
+		issuer = "chirpy-access"
+		expiresIn = time.Hour
+	} else {
+		issuer = "chirpy-refresh"
+		expiresIn = time.Hour * time.Duration(24*60)
+	}
 
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.RegisteredClaims{
-			Issuer:    "chirpy",
+			Issuer:    issuer,
 			IssuedAt:  jwt.NewNumericDate(curTime),
-			ExpiresAt: jwt.NewNumericDate(curTime.Add(time.Second * time.Duration(expiresIn))),
+			ExpiresAt: jwt.NewNumericDate(curTime.Add(expiresIn)),
 			Subject:   fmt.Sprint(id),
 		},
 	)
@@ -31,7 +41,7 @@ func CreateJwt(key []byte, id, expiresIn int) (string, error) {
 	return signedToken, nil
 }
 
-func ValidateJwt(tokenString string, key []byte) (int, error) {
+func ValidateJwt(tokenString string, key []byte, isAccess bool) (int, error) {
 	claim := jwt.RegisteredClaims{}
 	_, err := jwt.ParseWithClaims(
 		tokenString,
@@ -42,6 +52,14 @@ func ValidateJwt(tokenString string, key []byte) (int, error) {
 	)
 	if err != nil {
 		return -1, err
+	}
+
+	if isAccess && claim.Issuer != "chirpy-access" {
+		return -1, jwt.ErrTokenInvalidIssuer
+	}
+
+	if !isAccess && claim.Issuer != "chirpy-refresh" {
+		return -1, jwt.ErrTokenInvalidIssuer
 	}
 
 	id, err := strconv.Atoi(claim.Subject)

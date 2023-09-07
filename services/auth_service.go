@@ -1,13 +1,15 @@
 package services
 
 import (
+	"time"
+
 	"github.com/NischithB/chirpy/config"
 	"github.com/NischithB/chirpy/models"
 	"github.com/NischithB/chirpy/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Login(email, password string, expiresIn int) (models.UserLoginResponse, error) {
+func Login(email, password string) (models.UserLoginResponse, error) {
 	db := config.Config.DB
 	data, err := db.Read()
 	if err != nil {
@@ -20,9 +22,48 @@ func Login(email, password string, expiresIn int) (models.UserLoginResponse, err
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return models.UserLoginResponse{}, bcrypt.ErrMismatchedHashAndPassword
 	}
-	token, err := utils.CreateJwt(config.Config.JwtSecret, user.Id, expiresIn)
+	access, err := utils.CreateJwt(config.Config.JwtSecret, user.Id, true)
 	if err != nil {
 		return models.UserLoginResponse{}, err
 	}
-	return models.UserLoginResponse{Id: user.Id, Email: user.Email, Token: token}, nil
+	refresh, err := utils.CreateJwt(config.Config.JwtSecret, user.Id, false)
+	if err != nil {
+		return models.UserLoginResponse{}, err
+	}
+	return models.UserLoginResponse{
+		Id:      user.Id,
+		Email:   user.Email,
+		Token:   access,
+		Refresh: refresh,
+	}, nil
+}
+
+func RevokeToken(token string) error {
+	db := config.Config.DB
+	data, err := db.Read()
+	if err != nil {
+		return err
+	}
+	_, err = utils.ValidateJwt(token, config.Config.JwtSecret, false)
+	if err != nil {
+		return err
+	}
+	data.RevokedTokens[token] = time.Now().UTC().String()
+	if err := db.Write(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func IsTokenRevoked(token string) (bool, error) {
+	db := config.Config.DB
+	data, err := db.Read()
+	if err != nil {
+		return false, err
+	}
+
+	if _, revoked := data.RevokedTokens[token]; revoked {
+		return true, nil
+	}
+	return false, nil
 }

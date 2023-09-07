@@ -65,7 +65,7 @@ func handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := utils.ValidateJwt(token, config.Config.JwtSecret)
+	id, err := utils.ValidateJwt(token, config.Config.JwtSecret, true)
 	if err != nil {
 		utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
 		return
