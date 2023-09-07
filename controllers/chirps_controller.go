@@ -38,7 +38,13 @@ func handleCreateChirp(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}{}
 
-	err := json.NewDecoder(r.Body).Decode(&body)
+	id, err := services.AuthenticateUser(r)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+		return
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		log.Printf("Error decoding request body: %s", err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to decode request body")
@@ -51,7 +57,7 @@ func handleCreateChirp(w http.ResponseWriter, r *http.Request) {
 	}
 	cleanBody := utils.CleanChirp(body.Body)
 
-	chirp, err := services.CreateChirp(cleanBody)
+	chirp, err := services.CreateChirp(cleanBody, id)
 	if err != nil {
 		log.Println("Error creating chirp")
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to create chirp")

@@ -6,7 +6,7 @@ import (
 	"github.com/NischithB/chirpy/utils"
 )
 
-func CreateChirp(body string) (models.Chirp, error) {
+func CreateChirp(body string, userId int) (models.Chirp, error) {
 	db := config.Config.DB
 	data, err := db.Read()
 	if err != nil {
@@ -14,7 +14,7 @@ func CreateChirp(body string) (models.Chirp, error) {
 	}
 
 	id := len(data.Chirps) + 1
-	chirp := models.Chirp{Id: id, Body: body}
+	chirp := models.Chirp{Id: id, Body: body, AuthorId: userId}
 	data.Chirps[id] = chirp
 
 	if err := db.Write(data); err != nil {

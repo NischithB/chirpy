@@ -1,6 +1,7 @@
 package services
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/NischithB/chirpy/config"
@@ -66,4 +67,17 @@ func IsTokenRevoked(token string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func AuthenticateUser(r *http.Request) (int, error) {
+	token, err := utils.ExtractToken(r)
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := utils.ValidateJwt(token, config.Config.JwtSecret, true)
+	if err != nil {
+		return -1, err
+	}
+	return id, nil
 }
