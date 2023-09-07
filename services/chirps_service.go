@@ -51,3 +51,24 @@ func GetChirpById(chirpID int) (models.Chirp, error) {
 	}
 	return chirp, nil
 }
+
+func DeleteChirp(chirpID, userId int) error {
+	db := config.Config.DB
+	data, err := db.Read()
+	if err != nil {
+		return err
+	}
+
+	chirp, exists := data.Chirps[chirpID]
+	if !exists {
+		return utils.ErrNotFound
+	}
+	if chirp.AuthorId != userId {
+		return utils.ErrForbidden
+	}
+	delete(data.Chirps, chirpID)
+	if err := db.Write(data); err != nil {
+		return err
+	}
+	return nil
+}

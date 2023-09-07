@@ -18,7 +18,7 @@ func getChirpRouter() chi.Router {
 	chirpRouter.Get("/", handleGetChirps)
 	chirpRouter.Post("/", handleCreateChirp)
 	chirpRouter.Get("/{chirpID}", handleGetChirpById)
-
+	chirpRouter.Delete("/{chirpID}", handleDeleteChirp)
 	return chirpRouter
 }
 
@@ -85,4 +85,33 @@ func handleGetChirpById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, chirp)
+}
+
+func handleDeleteChirp(w http.ResponseWriter, r *http.Request) {
+	userId, err := services.AuthenticateUser(r)
+	if err != nil {
+		utils.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+		return
+	}
+
+	chirpID, err := strconv.Atoi(chi.URLParam(r, "chirpID"))
+	if err != nil {
+		utils.RespondWithError(w, http.StatusBadRequest, "Failed to get chirpId")
+		return
+	}
+
+	err = services.DeleteChirp(chirpID, userId)
+	if err != nil {
+		if errors.Is(err, utils.ErrNotFound) {
+			utils.RespondWithError(w, http.StatusNotFound, "No chirp with the given id exists")
+			return
+		}
+		if errors.Is(err, utils.ErrForbidden) {
+			utils.RespondWithError(w, http.StatusForbidden, "Not authorized to delete this chirp")
+			return
+		}
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete chirp")
+		return
+	}
+	utils.RespondWithJSON(w, http.StatusOK, "Successfully deleted chirp")
 }
