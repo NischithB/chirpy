@@ -23,6 +23,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	body := struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		Expiry   int    `json:"expires_in_seconds"`
 	}{}
 
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -32,7 +33,11 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := services.Login(body.Email, body.Password)
+	if body.Expiry == 0 {
+		body.Expiry = 60 * 60 * 24
+	}
+
+	user, err := services.Login(body.Email, body.Password, body.Expiry)
 	if errors.Is(err, utils.ErrUserNotExists) {
 		utils.RespondWithError(w, http.StatusBadRequest, "No user exists with the given email")
 		return

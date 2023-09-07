@@ -15,7 +15,7 @@ func main() {
 	port := 8080
 	addr := fmt.Sprintf("localhost:%d", port)
 
-	// database initialization
+	config.LoadEnvVars()
 	config.ConfigureDB()
 
 	fileServerHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))

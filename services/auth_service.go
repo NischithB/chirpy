@@ -7,18 +7,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Login(email, password string) (models.UserInfo, error) {
+func Login(email, password string, expiresIn int) (models.UserLoginResponse, error) {
 	db := config.Config.DB
 	data, err := db.Read()
 	if err != nil {
-		return models.UserInfo{}, err
+		return models.UserLoginResponse{}, err
 	}
 	user, exists := getUserByEmail(&data.Users, email)
 	if !exists {
-		return models.UserInfo{}, utils.ErrUserNotExists
+		return models.UserLoginResponse{}, utils.ErrUserNotExists
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return models.UserInfo{}, bcrypt.ErrMismatchedHashAndPassword
+		return models.UserLoginResponse{}, bcrypt.ErrMismatchedHashAndPassword
 	}
-	return models.UserInfo{Id: user.Id, Email: user.Email}, nil
+	token, err := utils.CreateJwt(config.Config.JwtSecret, user.Id, expiresIn)
+	if err != nil {
+		return models.UserLoginResponse{}, err
+	}
+	return models.UserLoginResponse{Id: user.Id, Email: user.Email, Token: token}, nil
 }

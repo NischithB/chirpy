@@ -6,10 +6,12 @@ import (
 
 	"github.com/NischithB/chirpy/database"
 	"github.com/NischithB/chirpy/models"
+	"github.com/joho/godotenv"
 )
 
 var Config struct {
 	DB             *database.Database[models.DatabaseModel]
+	JwtSecret      []byte
 	FileServerHits int
 }
 
@@ -25,4 +27,13 @@ func ConfigureDB() {
 		os.Exit(0)
 	}
 	Config.DB = db
+}
+
+func LoadEnvVars() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("Couldn't load Env variables: %s", err)
+		return
+	}
+	Config.JwtSecret = []byte(os.Getenv("JWT_SECRET"))
 }
