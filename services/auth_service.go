@@ -32,8 +32,11 @@ func Login(email, password string) (models.UserLoginResponse, error) {
 		return models.UserLoginResponse{}, err
 	}
 	return models.UserLoginResponse{
-		Id:      user.Id,
-		Email:   user.Email,
+		UserInfo: models.UserInfo{
+			Id:       user.Id,
+			Email:    user.Email,
+			IsMember: user.IsMember,
+		},
 		Token:   access,
 		Refresh: refresh,
 	}, nil

@@ -14,6 +14,7 @@ func GetAPIRouter() chi.Router {
 	apiRouter.Mount("/chirps", getChirpRouter())
 	apiRouter.Mount("/users", getUsersRouter())
 	apiRouter.Mount("/", getAuthController())
+	apiRouter.Mount("/polka", getPaymentController())
 	return apiRouter
 }
 
