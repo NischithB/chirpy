@@ -1,6 +1,8 @@
 package services
 
 import (
+	"sort"
+
 	"github.com/NischithB/chirpy/config"
 	"github.com/NischithB/chirpy/models"
 	"github.com/NischithB/chirpy/utils"
@@ -23,7 +25,7 @@ func CreateChirp(body string, userId int) (models.Chirp, error) {
 	return chirp, nil
 }
 
-func GetChirps() ([]models.Chirp, error) {
+func GetChirps(filterByAuthorId int, sortOrder string) ([]models.Chirp, error) {
 	db := config.Config.DB
 	data, err := db.Read()
 	if err != nil {
@@ -32,8 +34,22 @@ func GetChirps() ([]models.Chirp, error) {
 
 	chirps := []models.Chirp{}
 	for _, chirp := range data.Chirps {
-		chirps = append(chirps, chirp)
+		if filterByAuthorId == -1 || filterByAuthorId == chirp.AuthorId {
+			chirps = append(chirps, chirp)
+		}
 	}
+
+	var sortComparator func(int, int) bool
+	if sortOrder == "asc" {
+		sortComparator = func(i, j int) bool {
+			return chirps[i].Id < chirps[j].Id
+		}
+	} else {
+		sortComparator = func(i, j int) bool {
+			return chirps[i].Id > chirps[j].Id
+		}
+	}
+	sort.Slice(chirps, sortComparator)
 
 	return chirps, nil
 }

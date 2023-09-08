@@ -23,7 +23,17 @@ func getChirpRouter() chi.Router {
 }
 
 func handleGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := services.GetChirps()
+	queryParams := r.URL.Query()
+	authorId, err := strconv.Atoi(queryParams.Get("author_id"))
+	if err != nil {
+		authorId = -1
+	}
+	sortOrder := queryParams.Get("sort")
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+
+	chirps, err := services.GetChirps(authorId, sortOrder)
 	if err != nil {
 		log.Printf("Error fetching chirps: %s", err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to fetch chirps")
